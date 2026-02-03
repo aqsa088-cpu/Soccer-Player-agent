@@ -1,0 +1,123 @@
+import random
+
+class SoccerPlayerAgent:
+    """A PEAS Agent implementation for a soccer player."""
+
+    def __init__(self, player_id, team_id, position=(0, 0)):
+        """
+        Initializes the SoccerPlayerAgent.
+
+        Args:
+            player_id (int): Unique identifier for the player.
+            team_id (int): Identifier for the player's team.
+            position (tuple): Initial (x, y) coordinates of the player.
+        """
+        self.player_id = player_id
+        self.team_id = team_id
+        self.position = position
+        self.has_ball = False
+        self.role = 'defender' # Initial role
+        print(f"Agent {self.player_id} initialized for team {self.team_id} at {self.position}.")
+
+    def sense(self, environment_data):
+        """
+        Simulates the agent's sensing capabilities based on environment data.
+
+        Args:
+            environment_data (dict): Contains information like ball_position, 
+                                     player_positions (dict of {id: pos}), 
+                                     opponent_positions (dict of {id: pos}), 
+                                     game_state (str).
+
+        Returns:
+            dict: Processed sensory information.
+        """
+        sensed_data = {
+            'ball_position': environment_data.get('ball_position'),
+            'my_position': self.position,
+            'player_positions': environment_data.get('player_positions', {}),
+            'opponent_positions': environment_data.get('opponent_positions', {}),
+            'game_state': environment_data.get('game_state', 'playing'),
+            'has_ball': self.has_ball
+        }
+        # print(f"Agent {self.player_id} sensed: {sensed_data['ball_position']} (ball), {sensed_data['my_position']} (self).")
+        return sensed_data
+
+    def process(self, sensed_data):
+        """
+        Analyzes sensed data and determines a high-level action.
+
+        Args:
+            sensed_data (dict): Processed sensory information from the `sense` method.
+
+        Returns:
+            str: A chosen high-level action (e.g., 'kick', 'pass', 'move_to_position', 'tackle').
+        """
+        ball_pos = sensed_data.get('ball_position')
+        my_pos = sensed_data.get('my_position')
+        player_positions = sensed_data.get('player_positions')
+        opponent_positions = sensed_data.get('opponent_positions')
+        has_ball = sensed_data.get('has_ball')
+
+        # 1. Situation Assessment (Simplified)
+        distance_to_ball = ((my_pos[0] - ball_pos[0])**2 + (my_pos[1] - ball_pos[1])**2)**0.5
+        is_near_ball = distance_to_ball < 1.5 # Arbitrary threshold
+
+        # 2. Role Determination (Simplified)
+        # For this example, let's assume a static role for simplicity unless ball is very close
+        if is_near_ball:
+            self.role = 'attacker' if random.random() > 0.5 else 'midfielder' # Dynamic role change near ball
+        else:
+            self.role = 'defender' # Default role
+
+        # 3. Threat/Opportunity Analysis (Simplified)
+        if has_ball:
+            # If agent has the ball, look for opportunities to score or pass
+            if random.random() < 0.3: # Simulate a chance to shoot
+                print(f"Agent {self.player_id}: Opportunity to shoot!")
+                return 'kick_goal'
+            else:
+                print(f"Agent {self.player_id}: Looking for a pass.")
+                return 'pass'
+        elif is_near_ball and not has_ball: # If near ball but doesn't have it, try to get it
+            print(f"Agent {self.player_id}: Ball is near, attempting to get possession.")
+            return 'dribble_to_get_ball'
+        else: # If not near ball and doesn't have it, position themselves or defend
+            if self.role == 'defender':
+                print(f"Agent {self.player_id}: Defending position.")
+                return 'move_to_defensive_position'
+            else:
+                print(f"Agent {self.player_id}: Moving to support position.")
+                return 'move_to_support_position'
+
+    def act(self, action):
+        """
+        Translates a high-level action into specific commands or interactions.
+
+        Args:
+            action (str): The high-level action determined by the `process` method.
+        """
+        if action == 'kick_goal':
+            self.has_ball = False
+            print(f"Agent {self.player_id} executing: Kick ball towards opponent's goal!")
+        elif action == 'pass':
+            self.has_ball = False
+            target_player_id = random.choice([p_id for p_id in self.player_positions if p_id != self.player_id]) # Simplified
+            print(f"Agent {self.player_id} executing: Pass ball to teammate {target_player_id}.")
+        elif action == 'dribble_to_get_ball':
+            self.has_ball = True # Assume success for simplicity
+            print(f"Agent {self.player_id} executing: Dribbling to gain possession of the ball.")
+        elif action == 'move_to_defensive_position':
+            # Example: move towards own goal or cover an opponent
+            new_pos = (random.randint(-10, -5), random.randint(-5, 5)) # Example defensive zone
+            self.position = new_pos
+            print(f"Agent {self.player_id} executing: Moving to defensive position {self.position}.")
+        elif action == 'move_to_support_position':
+            # Example: move to an offensive or midfield support zone
+            new_pos = (random.randint(-5, 10), random.randint(-5, 5)) # Example support zone
+            self.position = new_pos
+            print(f"Agent {self.player_id} executing: Moving to support position {self.position}.")
+        else:
+            print(f"Agent {self.player_id} executing: Unknown action '{action}'.")
+
+print("SoccerPlayerAgent class defined.")
